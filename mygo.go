@@ -1,8 +1,10 @@
 package mygo
 
 import (
+	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
 	"os"
 	"strings"
 
@@ -30,4 +32,13 @@ func ParseFlag(args ...string) {
 		}
 	}
 	check.T(n <= flag.NArg()).F("not enough required args", "args", args, "flag_args", flag.Args())
+}
+
+func FileExist(filename string) bool {
+	_, err := os.Stat(filename)
+	if err == nil {
+		return true
+	}
+	check.T(errors.Is(err, fs.ErrNotExist)).P("stat", "filename", filename)
+	return false
 }
