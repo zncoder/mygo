@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/zncoder/check"
@@ -41,4 +42,17 @@ func FileExist(filename string) bool {
 	}
 	check.T(errors.Is(err, fs.ErrNotExist)).P("stat", "filename", filename)
 	return false
+}
+
+func Run(name string, args ...string) error {
+	cmd := exec.Command(name, args...)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	return cmd.Run()
+}
+
+func Stdout(name string, args ...string) ([]byte, error) {
+	cmd := exec.Command(name, args...)
+	cmd.Stderr = os.Stderr
+	return cmd.Output()
 }
