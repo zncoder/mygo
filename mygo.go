@@ -44,15 +44,28 @@ func FileExist(filename string) bool {
 	return false
 }
 
-func Run(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	return cmd.Run()
+type Cmd struct {
+	c *exec.Cmd
 }
 
-func Stdout(name string, args ...string) ([]byte, error) {
-	cmd := exec.Command(name, args...)
-	cmd.Stderr = os.Stderr
-	return cmd.Output()
+func NewCmd(name string, args ...string) Cmd {
+	c := exec.Command(name, args...)
+	c.Stderr = os.Stderr
+	c.Stdout = os.Stdout
+	return Cmd{c: c}
+}
+
+func (c Cmd) Silent() Cmd {
+	c.c.Stderr = nil
+	c.c.Stdout = nil
+	return c
+}
+
+func (c Cmd) Run() error {
+	return c.c.Run()
+}
+
+func (c Cmd) Stdout() ([]byte, error) {
+	c.c.Stdout = nil
+	return c.c.Output()
 }
