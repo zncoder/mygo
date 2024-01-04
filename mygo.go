@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strings"
@@ -45,7 +46,8 @@ func FileExist(filename string) bool {
 }
 
 type Cmd struct {
-	c *exec.Cmd
+	c     *exec.Cmd
+	trace bool
 }
 
 func NewCmd(name string, args ...string) Cmd {
@@ -61,11 +63,22 @@ func (c Cmd) Silent() Cmd {
 	return c
 }
 
+func (c Cmd) Trace() Cmd {
+	c.trace = true
+	return c
+}
+
 func (c Cmd) Run() error {
+	if c.trace {
+		slog.Info("run cmd", "args", c.c.Args)
+	}
 	return c.c.Run()
 }
 
 func (c Cmd) Stdout() ([]byte, error) {
+	if c.trace {
+		slog.Info("run cmd", "args", c.c.Args)
+	}
 	c.c.Stdout = nil
 	return c.c.Output()
 }
