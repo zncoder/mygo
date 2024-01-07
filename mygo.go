@@ -69,16 +69,25 @@ func (c Cmd) Trace() Cmd {
 }
 
 func (c Cmd) Run() error {
-	if c.trace {
-		slog.Info("run cmd", "args", c.c.Args)
-	}
+	c.showTrace()
 	return c.c.Run()
 }
 
-func (c Cmd) Stdout() ([]byte, error) {
+func (c Cmd) showTrace() {
 	if c.trace {
 		slog.Info("run cmd", "args", c.c.Args)
 	}
+}
+
+func (c Cmd) Stdout() ([]byte, error) {
+	c.showTrace()
 	c.c.Stdout = nil
 	return c.c.Output()
+}
+
+func (c Cmd) Interactive() error {
+	c.showTrace()
+	check.T(c.c.Stderr != nil && c.c.Stdout != nil).F("cannot be silent")
+	c.c.Stdin = os.Stdin
+	return c.c.Run()
 }
