@@ -57,9 +57,14 @@ func NewCmd(name string, args ...string) Cmd {
 	return Cmd{c: c}
 }
 
-func (c Cmd) Silent() Cmd {
-	c.c.Stderr = nil
-	c.c.Stdout = nil
+func (c Cmd) Silent(silent bool) Cmd {
+	if silent {
+		c.c.Stderr = nil
+		c.c.Stdout = nil
+	} else if c.c.Stderr == nil {
+		c.c.Stderr = os.Stderr
+		c.c.Stdout = os.Stdout
+	}
 	return c
 }
 
