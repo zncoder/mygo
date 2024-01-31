@@ -45,6 +45,15 @@ func FileExist(filename string) bool {
 	return false
 }
 
+func FileSize(filename string) (bool, int64) {
+	fi, err := os.Stat(filename)
+	if err == nil {
+		return true, fi.Size()
+	}
+	check.T(errors.Is(err, fs.ErrNotExist)).P("stat", "filename", filename)
+	return false, 0
+}
+
 type Cmd struct {
 	c     *exec.Cmd
 	trace bool
