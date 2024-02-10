@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/zncoder/check"
@@ -49,9 +50,8 @@ type OPMap map[string]*OP
 func (om OPMap) Run(alias string) {
 	op, ok := om[alias]
 	if !ok {
-		op, ok = om["help"]
-		check.T(ok).F("command not found", "command", alias)
-		op.Fn()
+		check.L("command not found", "command", alias)
+		om["help"].Fn()
 		os.Exit(2)
 	}
 	op.Fn()
@@ -60,6 +60,15 @@ func (om OPMap) Run(alias string) {
 func (om OPMap) Add(alias string, fn func()) {
 	check.T(om[alias] == nil).P("alias in use", "alias", alias)
 	om[alias] = &OP{Alias: alias, Name: alias, Fn: fn}
+}
+
+func (om OPMap) help() {
+	var ss []string
+	for alias, op := range om {
+		ss = append(ss, fmt.Sprintf("%s => %s", alias, op.Name))
+	}
+	slices.Sort(ss)
+	fmt.Println(strings.Join(ss, "\n"))
 }
 
 // BuildOPMap extracts exported methods of opRecv to a map,
@@ -95,6 +104,9 @@ func BuildOPMap[T any]() OPMap {
 		_, ok := ops[alias]
 		check.T(!ok).F("alias in use", "alias", alias)
 		ops[alias] = &OP{Alias: alias, Name: name, Fn: func() { fn(op) }}
+	}
+	if _, ok := ops["help"]; !ok {
+		ops["help"] = &OP{Alias: "help", Name: "Help", Fn: ops.help}
 	}
 	return ops
 }
