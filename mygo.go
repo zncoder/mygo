@@ -46,7 +46,16 @@ type OP struct {
 
 type OPMap map[string]*OP
 
-func (om OPMap) Run(alias string) { om[alias].Fn() }
+func (om OPMap) Run(alias string) {
+	op, ok := om[alias]
+	if !ok {
+		op, ok = om["help"]
+		check.T(ok).F("command not found", "command", alias)
+		op.Fn()
+		os.Exit(2)
+	}
+	op.Fn()
+}
 
 func (om OPMap) Add(alias string, fn func()) {
 	check.T(om[alias] == nil).P("alias in use", "alias", alias)
