@@ -8,6 +8,8 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/zncoder/check"
@@ -34,6 +36,72 @@ func ParseFlag(args ...string) {
 		}
 	}
 	check.T(n <= flag.NArg()).F("not enough required args", "args", args, "flag_args", flag.Args())
+}
+
+type OP struct {
+	Alias string
+	Name  string
+	Fn    func()
+}
+
+type OPMap map[string]*OP
+
+func (om OPMap) Run(alias string) { om[alias].Fn() }
+
+func (om OPMap) Add(alias string, fn func()) {
+	check.T(om[alias] == nil).P("alias in use", "alias", alias)
+	om[alias] = &OP{Alias: alias, Name: alias, Fn: fn}
+}
+
+// BuildOPMap extracts exported methods of opRecv to a map,
+// so that the methods can be called by the name or alias.
+// An example opRecv is,
+//
+//	type GitOP struct {}
+//	func (op GitOP) CM_Commit() {...}
+//	func (op GitOP) Status() {...}
+//
+// BuildOPMap[GitOP]() returns an OPMap,
+//
+//	{
+//	    "cm": OP{Alias: "cm", Name: "commit", Fn: wrapper_of_GitOP.CM_Commit,
+//	    "status": OP{Alias: "status", Name: "status", Fn: wrapper_of_GitOP.Status,
+//	}
+//
+// then we can call the op by alias,
+//
+//	var gitop OPMap = BuildOPMap[GitOP]()
+//	gitop.Run("cm")
+//
+// we can add additional methods manually to OPMap,
+//
+//	gitop.Add("log", gitLog)
+func BuildOPMap[T any]() OPMap {
+	ops := make(OPMap)
+	nameRe := regexp.MustCompile(`^([A-Z]+_)?([A-Z].*)$`)
+	var op T
+	rt := reflect.TypeOf(op)
+	for i := 0; i < rt.NumMethod(); i++ {
+		alias, name, fn := buildMethod[T](rt.Method(i), nameRe)
+		_, ok := ops[alias]
+		check.T(!ok).F("alias in use", "alias", alias)
+		ops[alias] = &OP{Alias: alias, Name: name, Fn: func() { fn(op) }}
+	}
+	return ops
+}
+
+func buildMethod[T any](m reflect.Method, nameRe *regexp.Regexp) (alias, name string, fn func(T)) {
+	mo := nameRe.FindStringSubmatch(m.Name)
+	check.T(mo != nil).F("invalid op method", "name", m.Name)
+	if mo[1] != "" {
+		alias = strings.ToLower(mo[1][:len(mo[1])-1])
+	} else {
+		alias = strings.ToLower(mo[2])
+	}
+	name = mo[2]
+	check.T(name != "").F("empty method name", "name", m.Name)
+	fn = m.Func.Interface().(func(T))
+	return alias, name, fn
 }
 
 func FileExist(filename string) bool {
