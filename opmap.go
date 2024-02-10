@@ -62,7 +62,7 @@ func (om OPMap) Add(alias string, fn func()) {
 	om.ops[alias] = &OP{Alias: alias, Name: "", Fn: fn}
 }
 
-func (om OPMap) ParseAndRun() {
+func (om OPMap) RunCmd() {
 	alias := filepath.Base(om.binName)
 	i := strings.Index(alias, ".")
 	if i < 0 {
