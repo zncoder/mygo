@@ -149,6 +149,10 @@ func BuildOPMap[T any]() OPMap {
 	if _, ok := ops["help"]; !ok {
 		ops["help"] = &OP{Alias: "help", Name: "Help", Fn: ops.help}
 	}
+	if _, ok := ops["symlink"]; ok {
+		check.F("symlink is use")
+	}
+	ops["symlink"] = &OP{Alias: "symlink", Name: "", Fn: ops.symlink}
 	return ops
 }
 

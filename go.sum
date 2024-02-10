@@ -4,3 +4,5 @@ github.com/zncoder/check v0.0.0-20240210002149-553e68d7aaa9 h1:SXQDRyd/9JvFR/0rv
 github.com/zncoder/check v0.0.0-20240210002149-553e68d7aaa9/go.mod h1:dee1ljbNl8dSrDgTCj3OOfAL5MbG2u4y28MtOlpzJUQ=
 github.com/zncoder/check v0.0.0-20240210002418-b80dbf41f5c4 h1:boJaS5CJFTvqXbYj+jPPP5ir2MRSG/EiJiqQ0izl4h4=
 github.com/zncoder/check v0.0.0-20240210002418-b80dbf41f5c4/go.mod h1:dee1ljbNl8dSrDgTCj3OOfAL5MbG2u4y28MtOlpzJUQ=
+github.com/zncoder/check v0.0.0-20240210205527-4e0f4a01e373 h1:HGhDpeCRLikiYP5EXPMTRBQ2jee+vQF83j4xPnQAlbk=
+github.com/zncoder/check v0.0.0-20240210205527-4e0f4a01e373/go.mod h1:dee1ljbNl8dSrDgTCj3OOfAL5MbG2u4y28MtOlpzJUQ=
