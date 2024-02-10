@@ -82,7 +82,8 @@ func (om OPMap) symlink() {
 	ParseFlag("prefix")
 	prefix := flag.Arg(0)
 
-	progName := check.V(filepath.Abs(os.Args[0])).F("filepath.abs", "arg0", os.Args[0])
+	progName := check.V(exec.LookPath(os.Args[0])).F("exec.lookpath", "arg0", os.Args[0])
+	progName = check.V(filepath.Abs(progName)).F("filepath.abs", "progname", progName)
 	if *resolveSymlink {
 		progName = ReadLastLink(progName)
 	}
