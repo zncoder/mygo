@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"slices"
@@ -73,6 +74,41 @@ func (om OPMap) help() {
 	}
 	slices.Sort(ss)
 	fmt.Println(strings.Join(ss, "\n"))
+}
+
+func (om OPMap) symlink() {
+	cleanOnly := flag.Bool("c", false, "clean only")
+	resolveSymlink := flag.Bool("l", true, "resolve symlink of program")
+	ParseFlag("prefix")
+	prefix := flag.Arg(0)
+
+	progName := check.V(filepath.Abs(os.Args[0])).F("filepath.abs", "arg0", os.Args[0])
+	if *resolveSymlink {
+		progName = ReadLastLink(progName)
+	}
+	binDir, binName := filepath.Split(progName)
+	if wd := check.V(os.Getwd()).F("getwd"); wd != binDir {
+		defer os.Chdir(wd)
+		os.Chdir(binDir)
+	}
+
+	cmds, _ := filepath.Glob(fmt.Sprintf("%s.*", prefix))
+	for _, c := range cmds {
+		if IsSymlink(c) {
+			os.Remove(c)
+		}
+	}
+	if *cleanOnly {
+		return
+	}
+
+	for _, op := range om {
+		if op.Name != "" {
+			name := fmt.Sprintf("%s.%s", prefix, op.Alias)
+			check.L("create", "name", name, "op", op.Name)
+			os.Symlink(binName, name)
+		}
+	}
 }
 
 // BuildOPMap extracts exported methods of opRecv to a map,
@@ -145,6 +181,26 @@ func FileSize(filename string) (bool, int64) {
 	}
 	check.T(errors.Is(err, fs.ErrNotExist)).P("stat", "filename", filename)
 	return false, 0
+}
+
+func IsSymlink(filename string) bool {
+	if st, err := os.Lstat(filename); err == nil {
+		return st.Mode()&os.ModeSymlink != 0
+	}
+	return false
+}
+
+func ReadLastLink(name string) string {
+	origName := name
+	for i := 0; i < 20; i++ {
+		p, err := os.Readlink(name)
+		if err != nil {
+			return name
+		}
+		name = p
+	}
+	check.T(false).F("readlastlink too many symlinks", "origname", origName, "name", name)
+	return origName
 }
 
 type Cmd struct {
