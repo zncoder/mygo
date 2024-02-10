@@ -59,13 +59,17 @@ func (om OPMap) Run(alias string) {
 
 func (om OPMap) Add(alias string, fn func()) {
 	check.T(om[alias] == nil).P("alias in use", "alias", alias)
-	om[alias] = &OP{Alias: alias, Name: alias, Fn: fn}
+	om[alias] = &OP{Alias: alias, Name: "", Fn: fn}
 }
 
 func (om OPMap) help() {
 	var ss []string
 	for alias, op := range om {
-		ss = append(ss, fmt.Sprintf("%s => %s", alias, op.Name))
+		if op.Name == "" {
+			ss = append(ss, alias)
+		} else {
+			ss = append(ss, fmt.Sprintf("%s => %s", alias, op.Name))
+		}
 	}
 	slices.Sort(ss)
 	fmt.Println(strings.Join(ss, "\n"))
