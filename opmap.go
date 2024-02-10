@@ -43,26 +43,44 @@ type OP struct {
 	Fn    func()
 }
 
-type OPMap map[string]*OP
+type OPMap struct {
+	ops     map[string]*OP
+	binName string
+}
 
 func (om OPMap) Run(alias string) {
-	op, ok := om[alias]
+	op, ok := om.ops[alias]
 	if !ok {
 		check.L("command not found", "command", alias)
-		om["help"].Fn()
-		os.Exit(2)
+		om.ops["help"].Fn()
 	}
 	op.Fn()
 }
 
 func (om OPMap) Add(alias string, fn func()) {
-	check.T(om[alias] == nil).P("alias in use", "alias", alias)
-	om[alias] = &OP{Alias: alias, Name: "", Fn: fn}
+	check.T(om.ops[alias] == nil).P("alias in use", "alias", alias)
+	om.ops[alias] = &OP{Alias: alias, Name: "", Fn: fn}
+}
+
+func (om OPMap) ParseAndRun() {
+	alias := filepath.Base(om.binName)
+	i := strings.Index(alias, ".")
+	if i < 0 {
+		if len(os.Args) < 2 {
+			om.ops["help"].Fn()
+		}
+		alias = os.Args[1]
+		os.Args = os.Args[1:]
+	} else {
+		alias = alias[i+1:]
+	}
+
+	om.Run(alias)
 }
 
 func (om OPMap) help() {
 	var ss []string
-	for alias, op := range om {
+	for alias, op := range om.ops {
 		if op.Name == "" {
 			ss = append(ss, alias)
 		} else {
@@ -71,6 +89,7 @@ func (om OPMap) help() {
 	}
 	slices.Sort(ss)
 	fmt.Println(strings.Join(ss, "\n"))
+	os.Exit(2)
 }
 
 func (om OPMap) symlink() {
@@ -79,12 +98,12 @@ func (om OPMap) symlink() {
 	ParseFlag("prefix")
 	prefix := flag.Arg(0)
 
-	progName := check.V(exec.LookPath(os.Args[0])).F("exec.lookpath", "arg0", os.Args[0])
+	progName := check.V(exec.LookPath(om.binName)).F("exec.lookpath", "arg0", om.binName)
 	progName = check.V(filepath.Abs(progName)).F("filepath.abs", "progname", progName)
 	if *resolveSymlink {
 		progName = ReadLastLink(progName)
 	}
-	binDir, binName := filepath.Split(progName)
+	binDir, binName := filepath.Split(om.binName)
 	if wd := check.V(os.Getwd()).F("getwd"); wd != binDir {
 		defer os.Chdir(wd)
 		os.Chdir(binDir)
@@ -100,7 +119,7 @@ func (om OPMap) symlink() {
 		return
 	}
 
-	for _, op := range om {
+	for _, op := range om.ops {
 		if op.Name != "" {
 			name := fmt.Sprintf("%s.%s", prefix, op.Alias)
 			check.L("create", "name", name, "op", op.Name)
@@ -133,24 +152,27 @@ func (om OPMap) symlink() {
 //
 //	gitop.Add("log", gitLog)
 func BuildOPMap[T any]() OPMap {
-	ops := make(OPMap)
+	om := OPMap{
+		ops:     make(map[string]*OP),
+		binName: os.Args[0],
+	}
 	nameRe := regexp.MustCompile(`^([A-Z]+_)?([A-Z].*)$`)
 	var op T
 	rt := reflect.TypeOf(op)
 	for i := 0; i < rt.NumMethod(); i++ {
 		alias, name, fn := buildMethod[T](rt.Method(i), nameRe)
-		_, ok := ops[alias]
+		_, ok := om.ops[alias]
 		check.T(!ok).F("alias in use", "alias", alias)
-		ops[alias] = &OP{Alias: alias, Name: name, Fn: func() { fn(op) }}
+		om.ops[alias] = &OP{Alias: alias, Name: name, Fn: func() { fn(op) }}
 	}
-	if _, ok := ops["help"]; !ok {
-		ops["help"] = &OP{Alias: "help", Name: "Help", Fn: ops.help}
+	if _, ok := om.ops["help"]; !ok {
+		om.ops["help"] = &OP{Alias: "help", Name: "Help", Fn: om.help}
 	}
-	if _, ok := ops["symlink"]; ok {
-		check.F("symlink is use")
+	if _, ok := om.ops["symlinkops"]; ok {
+		check.F("symlinkops is use")
 	}
-	ops["symlink"] = &OP{Alias: "symlink", Name: "", Fn: ops.symlink}
-	return ops
+	om.ops["symlinkops"] = &OP{Alias: "symlinkops", Name: "SymlinkOPs", Fn: om.symlink}
+	return om
 }
 
 func buildMethod[T any](m reflect.Method, nameRe *regexp.Regexp) (alias, name string, fn func(T)) {
