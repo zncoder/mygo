@@ -103,7 +103,7 @@ func (om OPMap) symlink() {
 	if *resolveSymlink {
 		progName = ReadLastLink(progName)
 	}
-	binDir, binName := filepath.Split(om.binName)
+	binDir, binName := filepath.Split(progName)
 	if wd := check.V(os.Getwd()).F("getwd"); wd != binDir {
 		defer os.Chdir(wd)
 		os.Chdir(binDir)
