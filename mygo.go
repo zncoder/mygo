@@ -61,14 +61,16 @@ func NewCmd(name string, args ...string) Cmd {
 	return Cmd{c: c}
 }
 
-func (c Cmd) Silent() Cmd {
-	c.c.Stderr = nil
-	c.c.Stdout = nil
+func (c Cmd) Silent(silent bool) Cmd {
+	if silent {
+		c.c.Stderr = nil
+		c.c.Stdout = nil
+	}
 	return c
 }
 
-func (c Cmd) IgnoreErr() Cmd {
-	c.ignoreErr = true
+func (c Cmd) IgnoreErr(ignoreErr bool) Cmd {
+	c.ignoreErr = ignoreErr
 	return c
 }
 
