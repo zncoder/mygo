@@ -84,9 +84,10 @@ func (c Cmd) Run() {
 	check.E(c.c.Run()).S(c.ignoreErr).P("cmd run failed", "args", c.c.Args)
 }
 
-func (c Cmd) Start() {
+func (c Cmd) Start() *os.Process {
 	c.showTrace()
 	check.E(c.c.Start()).S(c.ignoreErr).P("cmd start failed", "args", c.c.Args)
+	return c.c.Process
 }
 
 func (c Cmd) showTrace() {
