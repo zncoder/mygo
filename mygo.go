@@ -49,8 +49,9 @@ func ReadLastLink(name string) string {
 }
 
 type Cmd struct {
-	c     *exec.Cmd
-	trace bool
+	c         *exec.Cmd
+	trace     bool
+	ignoreErr bool
 }
 
 func NewCmd(name string, args ...string) Cmd {
@@ -60,14 +61,14 @@ func NewCmd(name string, args ...string) Cmd {
 	return Cmd{c: c}
 }
 
-func (c Cmd) Silent(silent bool) Cmd {
-	if silent {
-		c.c.Stderr = nil
-		c.c.Stdout = nil
-	} else if c.c.Stderr == nil {
-		c.c.Stderr = os.Stderr
-		c.c.Stdout = os.Stdout
-	}
+func (c Cmd) Silent() Cmd {
+	c.c.Stderr = nil
+	c.c.Stdout = nil
+	return c
+}
+
+func (c Cmd) IgnoreErr() Cmd {
+	c.ignoreErr = true
 	return c
 }
 
@@ -76,9 +77,14 @@ func (c Cmd) Trace() Cmd {
 	return c
 }
 
-func (c Cmd) Run() error {
+func (c Cmd) Run() {
 	c.showTrace()
-	return c.c.Run()
+	check.E(c.c.Run()).S(c.ignoreErr).P("cmd run failed", "args", c.c.Args)
+}
+
+func (c Cmd) Start() {
+	c.showTrace()
+	check.E(c.c.Start()).S(c.ignoreErr).P("cmd start failed", "args", c.c.Args)
 }
 
 func (c Cmd) showTrace() {
@@ -87,15 +93,15 @@ func (c Cmd) showTrace() {
 	}
 }
 
-func (c Cmd) Stdout() ([]byte, error) {
+func (c Cmd) Stdout() []byte {
 	c.showTrace()
 	c.c.Stdout = nil
-	return c.c.Output()
+	return check.V(c.c.Output()).S(c.ignoreErr).P("cmd stdout failed", "args", c.c.Args)
 }
 
-func (c Cmd) Interactive() error {
+func (c Cmd) Interactive() {
 	c.showTrace()
 	check.T(c.c.Stderr != nil && c.c.Stdout != nil).F("cannot be silent")
 	c.c.Stdin = os.Stdin
-	return c.c.Run()
+	check.E(c.c.Run()).S(c.ignoreErr).P("cmd interactive run failed", "args", c.c.Args)
 }
