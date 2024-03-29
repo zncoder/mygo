@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"unicode/utf8"
 
 	"github.com/zncoder/check"
 )
@@ -33,6 +34,28 @@ func IsSymlink(filename string) bool {
 		return st.Mode()&os.ModeSymlink != 0
 	}
 	return false
+}
+
+func GuessUTF8File(filename string) bool {
+	f, err := os.Open(filename)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	var buf [400]byte
+	n, err := f.Read(buf[:])
+	n -= utf8.UTFMax
+	if err != nil {
+		return false
+	}
+	for i := 0; i < n; {
+		r, size := utf8.DecodeRune(buf[i:])
+		if r == utf8.RuneError {
+			return false
+		}
+		i += size
+	}
+	return true
 }
 
 func ReadLastLink(name string) string {
