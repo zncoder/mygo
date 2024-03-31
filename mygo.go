@@ -36,6 +36,13 @@ func IsSymlink(filename string) bool {
 	return false
 }
 
+func IsDir(filename string) bool {
+	if st, err := os.Lstat(filename); err == nil {
+		return st.Mode()&os.ModeDir != 0
+	}
+	return false
+}
+
 func GuessUTF8File(filename string) bool {
 	f, err := os.Open(filename)
 	if err != nil {
