@@ -29,18 +29,19 @@ func FileSize(filename string) (bool, int64) {
 	return false, 0
 }
 
-func IsSymlink(filename string) bool {
+func FileMode(filename string) fs.FileMode {
 	if st, err := os.Lstat(filename); err == nil {
-		return st.Mode()&os.ModeSymlink != 0
+		return st.Mode()
 	}
-	return false
+	return 0
+}
+
+func IsSymlink(filename string) bool {
+	return FileMode(filename)&os.ModeSymlink != 0
 }
 
 func IsDir(filename string) bool {
-	if st, err := os.Lstat(filename); err == nil {
-		return st.Mode()&os.ModeDir != 0
-	}
-	return false
+	return FileMode(filename)&os.ModeDir != 0
 }
 
 func GuessUTF8File(filename string) bool {
