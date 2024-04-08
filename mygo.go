@@ -80,7 +80,7 @@ func ReadLastLink(name string) string {
 }
 
 type Cmd struct {
-	c         *exec.Cmd
+	C         *exec.Cmd
 	trace     bool
 	ignoreErr bool
 }
@@ -89,13 +89,13 @@ func NewCmd(name string, args ...string) Cmd {
 	c := exec.Command(name, args...)
 	c.Stderr = os.Stderr
 	c.Stdout = os.Stdout
-	return Cmd{c: c}
+	return Cmd{C: c}
 }
 
 func (c Cmd) Silent(silent bool) Cmd {
 	if silent {
-		c.c.Stderr = nil
-		c.c.Stdout = nil
+		c.C.Stderr = nil
+		c.C.Stdout = nil
 	}
 	return c
 }
@@ -112,36 +112,36 @@ func (c Cmd) Trace() Cmd {
 
 func (c Cmd) Run() {
 	c.showTrace()
-	check.E(c.c.Run()).S(c.ignoreErr).F("cmd run failed", "args", c.c.Args)
+	check.E(c.C.Run()).S(c.ignoreErr).F("cmd run failed", "args", c.C.Args)
 }
 
 func (c Cmd) RunWithExitCode() int {
 	c.showTrace()
-	c.c.Run()
-	return c.c.ProcessState.ExitCode()
+	c.C.Run()
+	return c.C.ProcessState.ExitCode()
 }
 
 func (c Cmd) Start() *os.Process {
 	c.showTrace()
-	check.E(c.c.Start()).S(c.ignoreErr).F("cmd start failed", "args", c.c.Args)
-	return c.c.Process
+	check.E(c.C.Start()).S(c.ignoreErr).F("cmd start failed", "args", c.C.Args)
+	return c.C.Process
 }
 
 func (c Cmd) showTrace() {
 	if c.trace {
-		slog.Info("run cmd", "args", c.c.Args)
+		slog.Info("run cmd", "args", c.C.Args)
 	}
 }
 
 func (c Cmd) Stdout() []byte {
 	c.showTrace()
-	c.c.Stdout = nil
-	return check.V(c.c.Output()).S(c.ignoreErr).F("cmd stdout failed", "args", c.c.Args)
+	c.C.Stdout = nil
+	return check.V(c.C.Output()).S(c.ignoreErr).F("cmd stdout failed", "args", c.C.Args)
 }
 
 func (c Cmd) Interactive() {
 	c.showTrace()
-	check.T(c.c.Stderr != nil && c.c.Stdout != nil).F("cannot be silent")
-	c.c.Stdin = os.Stdin
-	check.E(c.c.Run()).S(c.ignoreErr).F("cmd interactive run failed", "args", c.c.Args)
+	check.T(c.C.Stderr != nil && c.C.Stdout != nil).F("cannot be silent")
+	c.C.Stdin = os.Stdin
+	check.E(c.C.Run()).S(c.ignoreErr).F("cmd interactive run failed", "args", c.C.Args)
 }
