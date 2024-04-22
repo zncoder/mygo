@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -94,16 +93,10 @@ func (om OPMap) help() {
 
 func (om OPMap) symlink() {
 	cleanOnly := flag.Bool("c", false, "clean only")
-	resolveSymlink := flag.Bool("l", true, "resolve symlink of program")
 	ParseFlag("prefix")
 	prefix := flag.Arg(0)
 
-	progName := check.V(exec.LookPath(om.binName)).F("exec.lookpath", "arg0", om.binName)
-	progName = check.V(filepath.Abs(progName)).F("filepath.abs", "progname", progName)
-	if *resolveSymlink {
-		progName = ReadLastLink(progName)
-	}
-	binDir, binName := filepath.Split(progName)
+	binDir, binName := filepath.Split(om.binName)
 	if wd := check.V(os.Getwd()).F("getwd"); wd != binDir {
 		defer os.Chdir(wd)
 		os.Chdir(binDir)
@@ -154,7 +147,7 @@ func (om OPMap) symlink() {
 func BuildOPMap[T any]() OPMap {
 	om := OPMap{
 		ops:     make(map[string]*OP),
-		binName: os.Args[0],
+		binName: getBinName(),
 	}
 	nameRe := regexp.MustCompile(`^([A-Z]+_)?([A-Z].*)$`)
 	var op T
@@ -173,6 +166,12 @@ func BuildOPMap[T any]() OPMap {
 	}
 	om.ops["symlinkops"] = &OP{Alias: "symlinkops", Name: "SymlinkOPs", Fn: om.symlink}
 	return om
+}
+
+func getBinName() string {
+	progName := check.V(os.Executable()).F("os.executable", "arg0", os.Args[0])
+	progName = check.V(filepath.EvalSymlinks(progName)).F("evalsymlinks", "progname", progName)
+	return check.V(filepath.Abs(progName)).F("filepath.abs", "progname", progName)
 }
 
 func buildMethod[T any](m reflect.Method, nameRe *regexp.Regexp) (alias, name string, fn func(T)) {
