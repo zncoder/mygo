@@ -37,6 +37,16 @@ func ParseFlag(args ...string) {
 	check.T(n <= flag.NArg()).F("not enough required args", "args", args, "flag_args", flag.Args())
 }
 
+func Yorn(s string, args ...any) {
+	if len(args) > 0 {
+		s = fmt.Sprintf(s, args...)
+	}
+	fmt.Print(s + " ([y]/n)?: ")
+	var b [2]byte
+	n := check.V(os.Stdin.Read(b[:])).F("read stdin")
+	check.T(n <= 1 || b[0] == 'y').F("aborted")
+}
+
 type OP struct {
 	Alias string
 	Name  string
