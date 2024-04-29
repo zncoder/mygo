@@ -198,3 +198,8 @@ func buildMethod[T any](m reflect.Method, nameRe *regexp.Regexp) (alias, name st
 	fn = m.Func.Interface().(func(T))
 	return alias, name, fn
 }
+
+// RunOpMapCmd is a helper that combines BuildOpMap and RunCmd
+func RunOpMapCmd[T any]() {
+	BuildOPMap[T]().RunCmd()
+}
