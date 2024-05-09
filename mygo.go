@@ -6,6 +6,9 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"slices"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/zncoder/check"
@@ -144,4 +147,20 @@ func (c Cmd) Interactive() {
 	check.T(c.C.Stderr != nil && c.C.Stdout != nil).F("cannot be silent")
 	c.C.Stdin = os.Stdin
 	check.E(c.C.Run()).S(c.ignoreErr).F("cmd interactive run failed", "args", c.C.Args)
+}
+
+var ignoredExts = []string{".o", ".so", ".exe", ".dylib", ".test", ".out"}
+
+func IgnoreFile(filename string) bool {
+	if strings.Contains(filename, "/.") || strings.HasSuffix(filename, "~") {
+		return true
+	}
+	ext := strings.ToLower(filepath.Ext(filename))
+	if slices.Contains(ignoredExts, ext) {
+		return true
+	}
+	if mode := FileMode(filename); mode&(os.ModeDir|os.ModeSymlink) != 0 {
+		return true
+	}
+	return false
 }
