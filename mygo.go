@@ -164,3 +164,9 @@ func IgnoreFile(filename string) bool {
 	}
 	return false
 }
+
+func HomeFile(filename string) string {
+	check.T(strings.HasPrefix(filename, "~/")).F("filename not start with ~/", "filename", filename)
+	home := check.V(os.UserHomeDir()).F("get home dir")
+	return filepath.Join(home, filename[2:])
+}
