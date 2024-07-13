@@ -47,6 +47,10 @@ func IsDir(filename string) bool {
 	return FileMode(filename)&os.ModeDir != 0
 }
 
+func ErrNotExist(err error) bool {
+    return errors.Is(err, fs.ErrNotExist)
+}
+
 func GuessUTF8File(filename string) bool {
 	f, err := os.Open(filename)
 	if err != nil {
