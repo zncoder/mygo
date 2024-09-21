@@ -172,15 +172,22 @@ func (c Cmd) Interactive() {
 
 var ignoredExts = []string{".o", ".so", ".exe", ".dylib", ".test", ".out"}
 
-func IgnoreFile(filename string) bool {
-	if strings.Contains(filename, "/.") || strings.HasSuffix(filename, "~") {
+func IgnoreFilename(filename string) bool {
+	if strings.HasPrefix(filename, ".") || strings.Contains(filename, "/.") || strings.HasSuffix(filename, "~") {
 		return true
 	}
 	ext := strings.ToLower(filepath.Ext(filename))
 	if slices.Contains(ignoredExts, ext) {
 		return true
 	}
-	if mode := FileMode(filename); mode&(os.ModeDir|os.ModeSymlink) != 0 {
+	return false
+}
+
+func IgnoreRegularFile(filename string) bool {
+	if IgnoreFilename(filename) {
+		return true
+	}
+	if mode := FileMode(filename); !mode.IsRegular() {
 		return true
 	}
 	return false
