@@ -88,9 +88,8 @@ func ReadLastLink(name string) string {
 }
 
 type Cmd struct {
-	C         *exec.Cmd
-	trace     bool
-	ignoreErr bool
+	C                *exec.Cmd
+	trace, ignoreErr bool
 }
 
 func NewCmd(name string, args ...string) Cmd {
@@ -100,30 +99,31 @@ func NewCmd(name string, args ...string) Cmd {
 	return Cmd{C: c}
 }
 
-func (c Cmd) Silent(silent bool) Cmd {
-	if silent {
-		c.C.Stderr = nil
-		c.C.Stdout = nil
-	}
+func (c Cmd) S() Cmd {
+	c.C.Stderr = nil
+	c.C.Stdout = nil
 	return c
 }
 
-func (c Cmd) IgnoreErr(ignoreErr bool) Cmd {
-	c.ignoreErr = ignoreErr
-	return c
-}
-
-func (c Cmd) Trace() Cmd {
+func (c Cmd) T() Cmd {
 	c.trace = true
+	return c
+}
+
+func (c Cmd) I() Cmd {
+	c.ignoreErr = true
 	return c
 }
 
 func (c Cmd) Run() {
 	c.showTrace()
-	check.E(c.C.Run()).S(c.ignoreErr).F("cmd run failed", "args", c.C.Args)
+	err := c.C.Run()
+	if !c.ignoreErr {
+		check.E(err).F("cmd run failed", "args", c.C.Args)
+	}
 }
 
-func (c Cmd) RunWithExitCode() int {
+func (c Cmd) Code() int {
 	c.showTrace()
 	c.C.Run()
 	return c.C.ProcessState.ExitCode()
@@ -131,7 +131,10 @@ func (c Cmd) RunWithExitCode() int {
 
 func (c Cmd) Start() *os.Process {
 	c.showTrace()
-	check.E(c.C.Start()).S(c.ignoreErr).F("cmd start failed", "args", c.C.Args)
+	err := c.C.Start()
+	if !c.ignoreErr {
+		check.E(err).F("cmd start failed", "args", c.C.Args)
+	}
 	return c.C.Process
 }
 
@@ -144,14 +147,18 @@ func (c Cmd) showTrace() {
 func (c Cmd) Stdout() []byte {
 	c.showTrace()
 	c.C.Stdout = nil
-	return check.V(c.C.Output()).S(c.ignoreErr).F("cmd stdout failed", "args", c.C.Args)
+	b, err := c.C.Output()
+	if !c.ignoreErr {
+		check.E(err).F("cmd stdout failed", "args", c.C.Args)
+	}
+	return b
 }
 
 func (c Cmd) Interactive() {
 	c.showTrace()
-	check.T(c.C.Stderr != nil && c.C.Stdout != nil).F("cannot be silent")
+	check.T(c.C.Stderr != nil && c.C.Stdout != nil && !c.ignoreErr).F("cannot be silent")
 	c.C.Stdin = os.Stdin
-	check.E(c.C.Run()).S(c.ignoreErr).F("cmd interactive run failed", "args", c.C.Args)
+	check.E(c.C.Run()).F("cmd interactive run failed", "args", c.C.Args)
 }
 
 var ignoredExts = []string{".o", ".so", ".exe", ".dylib", ".test", ".out"}

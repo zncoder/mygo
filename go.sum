@@ -10,3 +10,9 @@ github.com/zncoder/check v0.0.0-20240921055541-6879d5950bda h1:gZ2NAPOjuAiOS+Rys
 github.com/zncoder/check v0.0.0-20240921055541-6879d5950bda/go.mod h1:dee1ljbNl8dSrDgTCj3OOfAL5MbG2u4y28MtOlpzJUQ=
 github.com/zncoder/check v0.0.0-20240921061508-e3128710994c h1:fbPNbwfNyaJunyclIaoBlclyEv58eVt1Z9k8KHAHGJ0=
 github.com/zncoder/check v0.0.0-20240921061508-e3128710994c/go.mod h1:dee1ljbNl8dSrDgTCj3OOfAL5MbG2u4y28MtOlpzJUQ=
+github.com/zncoder/check v0.0.0-20240921152936-8dd403d2dd7d h1:PhdtbqKdR2tYlGf23P6j48OnOxQYDp5Hd/Mc5xymH5g=
+github.com/zncoder/check v0.0.0-20240921152936-8dd403d2dd7d/go.mod h1:dee1ljbNl8dSrDgTCj3OOfAL5MbG2u4y28MtOlpzJUQ=
+github.com/zncoder/check v0.0.0-20240921153545-e9189e26750c h1:Sb2qwQ0pUe1SykalRkq1gbyKGAI9OKcppTVNY7FxCeQ=
+github.com/zncoder/check v0.0.0-20240921153545-e9189e26750c/go.mod h1:dee1ljbNl8dSrDgTCj3OOfAL5MbG2u4y28MtOlpzJUQ=
+github.com/zncoder/check v0.0.0-20240921154110-f068e8bec397 h1:AfXTAbzZ59UUOM4LA3OnKVhrYCREx391VN0zqBswoj8=
+github.com/zncoder/check v0.0.0-20240921154110-f068e8bec397/go.mod h1:dee1ljbNl8dSrDgTCj3OOfAL5MbG2u4y28MtOlpzJUQ=
