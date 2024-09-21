@@ -2,6 +2,7 @@ package mygo
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -48,7 +49,7 @@ func IsDir(filename string) bool {
 }
 
 func ErrNotExist(err error) bool {
-    return errors.Is(err, fs.ErrNotExist)
+	return errors.Is(err, fs.ErrNotExist)
 }
 
 func GuessUTF8File(filename string) bool {
@@ -173,4 +174,8 @@ func HomeFile(filename string) string {
 	check.T(strings.HasPrefix(filename, "~/")).F("filename not start with ~/", "filename", filename)
 	home := check.V(os.UserHomeDir()).F("get home dir")
 	return filepath.Join(home, filename[2:])
+}
+
+func Type(arg any) string {
+	return fmt.Sprintf("%T", arg)
 }
