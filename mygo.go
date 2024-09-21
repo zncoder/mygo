@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/zncoder/check"
@@ -38,6 +39,14 @@ func FileMode(filename string) fs.FileMode {
 		return st.Mode()
 	}
 	return 0
+}
+
+func IsFileFresh(filename string, expire time.Time) bool {
+	st, ok := check.V(os.Stat(filename)).S().K("stat")
+	if !ok {
+		return false
+	}
+	return st.ModTime().After(expire)
 }
 
 func IsSymlink(filename string) bool {
