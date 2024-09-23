@@ -59,6 +59,9 @@ type OPMap struct {
 }
 
 func (om OPMap) Run(alias string) {
+	if alias == "-h" || alias == "--help" {
+		alias = "help"
+	}
 	op, ok := om.ops[alias]
 	if !ok {
 		check.L("command not found", "command", alias)
