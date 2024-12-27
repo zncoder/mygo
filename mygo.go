@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/zncoder/check"
@@ -38,6 +39,14 @@ func FileMode(filename string) fs.FileMode {
 		return st.Mode()
 	}
 	return 0
+}
+
+func IsFileFresh(filename string, expire time.Time) bool {
+	st, ok := check.V(os.Stat(filename)).S().K("stat")
+	if !ok {
+		return false
+	}
+	return st.ModTime().After(expire)
 }
 
 func IsSymlink(filename string) bool {
@@ -163,22 +172,31 @@ func (c Cmd) Interactive() {
 
 var ignoredExts = []string{".o", ".so", ".exe", ".dylib", ".test", ".out"}
 
-func IgnoreFile(filename string) bool {
-	if strings.Contains(filename, "/.") || strings.HasSuffix(filename, "~") {
+func IgnoreFilename(filename string, exts ...string) bool {
+	if strings.HasPrefix(filename, ".") || strings.Contains(filename, "/.") || strings.HasSuffix(filename, "~") {
 		return true
 	}
 	ext := strings.ToLower(filepath.Ext(filename))
-	if slices.Contains(ignoredExts, ext) {
+	if slices.Contains(ignoredExts, ext) || slices.Contains(exts, ext) {
 		return true
 	}
-	if mode := FileMode(filename); mode&(os.ModeDir|os.ModeSymlink) != 0 {
+	return false
+}
+
+func IgnoreRegularFile(filename string, exts ...string) bool {
+	if IgnoreFilename(filename, exts...) {
+		return true
+	}
+	if mode := FileMode(filename); !mode.IsRegular() {
 		return true
 	}
 	return false
 }
 
 func HomeFile(filename string) string {
-	check.T(strings.HasPrefix(filename, "~/")).F("filename not start with ~/", "filename", filename)
+	if !strings.HasPrefix(filename, "~/") {
+		return filename
+	}
 	home := check.V(os.UserHomeDir()).F("get home dir")
 	return filepath.Join(home, filename[2:])
 }
