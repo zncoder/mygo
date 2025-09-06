@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -59,13 +58,10 @@ type OPMap struct {
 }
 
 func (om OPMap) Run(alias string) {
-	if alias == "-h" || alias == "--help" {
-		alias = "help"
-	}
 	op, ok := om.ops[alias]
 	if !ok {
 		check.L("command not found", "command", alias)
-		om.ops["help"].Fn()
+		om.help()
 	}
 	op.Fn()
 }
@@ -80,7 +76,7 @@ func (om OPMap) RunCmd() {
 	i := strings.Index(alias, ".")
 	if i < 0 {
 		if len(os.Args) < 2 {
-			om.ops["help"].Fn()
+			om.help()
 		}
 		alias = os.Args[1]
 		os.Args = os.Args[1:]
@@ -103,42 +99,6 @@ func (om OPMap) help() {
 	slices.Sort(ss)
 	fmt.Println(strings.Join(ss, "\n"))
 	os.Exit(2)
-}
-
-func (om OPMap) symlink() {
-	cleanOnly := flag.Bool("c", false, "clean only")
-	resolveSymlink := flag.Bool("l", true, "resolve symlink of program")
-	ParseFlag("prefix")
-	prefix := flag.Arg(0)
-
-	progName := check.V(exec.LookPath(om.binName)).F("exec.lookpath", "arg0", om.binName)
-	progName = check.V(filepath.Abs(progName)).F("filepath.abs", "progname", progName)
-	if *resolveSymlink {
-		progName = ReadLastLink(progName)
-	}
-	binDir, binName := filepath.Split(progName)
-	if wd := check.V(os.Getwd()).F("getwd"); wd != binDir {
-		defer os.Chdir(wd)
-		os.Chdir(binDir)
-	}
-
-	cmds, _ := filepath.Glob(fmt.Sprintf("%s.*", prefix))
-	for _, c := range cmds {
-		if IsSymlink(c) {
-			os.Remove(c)
-		}
-	}
-	if *cleanOnly {
-		return
-	}
-
-	for _, op := range om.ops {
-		if op.Name != "" {
-			name := fmt.Sprintf("%s.%s", prefix, op.Alias)
-			check.L("create", "name", name, "op", op.Name)
-			os.Symlink(binName, name)
-		}
-	}
 }
 
 // BuildOPMap extracts exported methods of opRecv to a map,
@@ -178,13 +138,6 @@ func BuildOPMap[T any]() OPMap {
 		check.T(!ok).F("alias in use", "alias", alias)
 		om.ops[alias] = &OP{Alias: alias, Name: name, Fn: func() { fn(op) }}
 	}
-	if _, ok := om.ops["help"]; !ok {
-		om.ops["help"] = &OP{Alias: "help", Name: "Help", Fn: om.help}
-	}
-	if _, ok := om.ops["symlinkops"]; ok {
-		check.F("symlinkops is use")
-	}
-	om.ops["symlinkops"] = &OP{Alias: "symlinkops", Name: "SymlinkOPs", Fn: om.symlink}
 	return om
 }
 
