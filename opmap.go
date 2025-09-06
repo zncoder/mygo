@@ -101,6 +101,8 @@ func (om OPMap) help() {
 	os.Exit(2)
 }
 
+var nameRe = regexp.MustCompile(`^([A-Z]+_)?([A-Z].*)$`)
+
 // BuildOPMap extracts exported methods of opRecv to a map,
 // so that the methods can be called by the name or alias.
 // An example opRecv is,
@@ -129,11 +131,10 @@ func BuildOPMap[T any]() OPMap {
 		ops:     make(map[string]*OP),
 		binName: os.Args[0],
 	}
-	nameRe := regexp.MustCompile(`^([A-Z]+_)?([A-Z].*)$`)
 	var op T
 	rt := reflect.TypeOf(op)
 	for i := 0; i < rt.NumMethod(); i++ {
-		alias, name, fn := buildMethod[T](rt.Method(i), nameRe)
+		alias, name, fn := buildMethod[T](rt.Method(i))
 		_, ok := om.ops[alias]
 		check.T(!ok).F("alias in use", "alias", alias)
 		om.ops[alias] = &OP{Alias: alias, Name: name, Fn: func() { fn(op) }}
@@ -141,7 +142,7 @@ func BuildOPMap[T any]() OPMap {
 	return om
 }
 
-func buildMethod[T any](m reflect.Method, nameRe *regexp.Regexp) (alias, name string, fn func(T)) {
+func buildMethod[T any](m reflect.Method) (alias, name string, fn func(T)) {
 	mo := nameRe.FindStringSubmatch(m.Name)
 	check.T(mo != nil).F("invalid op method", "name", m.Name)
 	if mo[1] != "" {
