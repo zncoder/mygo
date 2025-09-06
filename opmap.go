@@ -57,15 +57,36 @@ type OPMap struct {
 	binName string
 }
 
-func (om OPMap) Run(alias string) {
+func (om OPMap) runAlias(alias string) bool {
 	op, ok := om.ops[alias]
 	if !ok {
+		return false
+	}
+	op.Fn()
+	return true
+}
+
+func (om OPMap) mustRun(alias string) {
+	if !om.runAlias(alias) {
 		check.L("command not found", "command", alias)
 		om.help()
 	}
-	op.Fn()
 }
 
+func (om OPMap) fuzzyRun(needle string) {
+	if om.runAlias(needle) {
+		return
+	}
+	needle = strings.ToLower(needle)
+	var aliases []string
+	for _, op := range om.ops {
+		if strings.Contains(strings.ToLower(op.Name), needle) {
+			aliases = append(aliases, op.Alias)
+		}
+	}
+	check.T(len(aliases) == 1).F("fuzzy run mismatch", "needle", needle, "aliases", aliases)
+	om.mustRun(aliases[0])
+}
 func (om OPMap) Add(alias string, fn func()) {
 	check.T(om.ops[alias] == nil).P("alias in use", "alias", alias)
 	om.ops[alias] = &OP{Alias: alias, Name: "", Fn: fn}
@@ -80,17 +101,17 @@ func (om OPMap) RunCmd() {
 		}
 		alias = os.Args[1]
 		os.Args = os.Args[1:]
+		om.fuzzyRun(alias)
 	} else {
 		alias = alias[i+1:]
+		om.mustRun(alias)
 	}
-
-	om.Run(alias)
 }
 
 func (om OPMap) help() {
 	var ss []string
 	for alias, op := range om.ops {
-		if op.Name == "" {
+		if len(op.Alias) == len(op.Name) {
 			ss = append(ss, alias)
 		} else {
 			ss = append(ss, fmt.Sprintf("%s => %s", alias, op.Name))
@@ -100,8 +121,6 @@ func (om OPMap) help() {
 	fmt.Println(strings.Join(ss, "\n"))
 	os.Exit(2)
 }
-
-var nameRe = regexp.MustCompile(`^([A-Z]+_)?([A-Z].*)$`)
 
 // BuildOPMap extracts exported methods of opRecv to a map,
 // so that the methods can be called by the name or alias.
@@ -141,6 +160,8 @@ func BuildOPMap[T any]() OPMap {
 	}
 	return om
 }
+
+var nameRe = regexp.MustCompile(`^([A-Z]+_)?([A-Z].*)$`)
 
 func buildMethod[T any](m reflect.Method) (alias, name string, fn func(T)) {
 	mo := nameRe.FindStringSubmatch(m.Name)

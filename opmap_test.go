@@ -1,9 +1,7 @@
-package mygo_test
+package mygo
 
 import (
 	"testing"
-
-	"github.com/zncoder/mygo"
 )
 
 type Foo struct{}
@@ -14,13 +12,17 @@ func (Foo) Hello()   { hello++ }
 func (Foo) CP_Copy() { copy++ }
 
 func TestBuildOPMap(t *testing.T) {
-	ops := mygo.BuildOPMap[Foo]()
-	ops.Run("hello")
+	ops := BuildOPMap[Foo]()
+	ops.mustRun("hello")
 	if hello != 1 {
 		t.Fatal("hello not called")
 	}
-	ops.Run("cp")
+	ops.mustRun("cp")
 	if copy != 1 {
 		t.Fatal("cp not called")
+	}
+	ops.fuzzyRun("ll")
+	if hello != 2 {
+		t.Fatal("hello not called")
 	}
 }
